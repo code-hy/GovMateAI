@@ -6,13 +6,70 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 
 from backend.api.deps import get_orchestrator
-from backend.core.database import create_session, get_session_messages, list_sessions, update_session_timestamp
+from backend.core.database import create_session as db_create_session
+from backend.core.database import get_session_messages as db_get_messages
+from backend.core.database import list_sessions as db_list_sessions
+from backend.core.database import update_session_timestamp
 from backend.models.schemas import ChatRequest, ChatResponse
 from backend.rag.judge import run_builtin_judge
 from backend.rag.metrics import save_llm_call, update_feedback
 from backend.rag.orchestrator import RAGOrchestrator
+from backend.rag.session_store import (
+    create_session as file_create_session,
+    get_session_messages as file_get_messages,
+    list_sessions as file_list_sessions,
+    save_llm_call_local,
+    update_feedback_local,
+    update_relevance_local,
+)
 
 router = APIRouter()
+
+
+def _save_session(session_id, title):
+    try:
+        db_create_session(session_id, title)
+    except Exception:
+        file_create_session(session_id, title)
+
+
+def _list_sessions():
+    try:
+        return db_list_sessions()
+    except Exception:
+        return file_list_sessions()
+
+
+def _get_messages(session_id):
+    try:
+        return db_get_messages(session_id)
+    except Exception:
+        return file_get_messages(session_id)
+
+
+def _save_call(call_id, session_id, question, answer, context_docs, latency, prompt_tokens, completion_tokens):
+    try:
+        save_llm_call(
+            call_id=call_id,
+            session_id=session_id,
+            question=question,
+            answer=answer,
+            context_docs=context_docs,
+            latency=latency,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+        )
+    except Exception:
+        save_llm_call_local(
+            call_id=call_id,
+            session_id=session_id,
+            question=question,
+            answer=answer,
+            context_docs=context_docs,
+            latency=latency,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+        )
 
 
 @router.post("/api/v1/feedback")
@@ -21,7 +78,10 @@ async def submit_feedback(request: Request):
     call_id = form.get("call_id")
     feedback_val = form.get("feedback")
     if call_id and feedback_val:
-        update_feedback(call_id, int(feedback_val))
+        try:
+            update_feedback(call_id, int(feedback_val))
+        except Exception:
+            update_feedback_local(call_id, int(feedback_val))
     return StreamingResponse("", media_type="text/html")
 
 
@@ -43,7 +103,7 @@ async def chat_json(
     completion_tokens = int(len(result["answer"].split()) * 1.3)
 
     background_tasks.add_task(
-        save_llm_call,
+        _save_call,
         call_id=call_id,
         session_id=req.session_id,
         question=req.question,
@@ -109,10 +169,10 @@ async def chat_htmx(
         rewritten = orchestrator.retriever.retrieve(question)[:5]
         top_docs = orchestrator.reranker.rerank(question, rewritten, 5)
 
-        create_session(session_id, question[:80])
+        _save_session(session_id, question[:80])
 
         background_tasks.add_task(
-            save_llm_call,
+            _save_call,
             call_id=call_id,
             session_id=session_id,
             question=question,
@@ -125,14 +185,13 @@ async def chat_htmx(
         background_tasks.add_task(
             run_builtin_judge, call_id, question, full_text
         )
-        background_tasks.add_task(update_session_timestamp, session_id)
 
     return StreamingResponse(generate(), media_type="text/html")
 
 
 @router.get("/api/v1/sessions", response_class=HTMLResponse)
 async def list_chat_sessions():
-    sessions = list_sessions()
+    sessions = _list_sessions()
     items = ""
     for s in sessions:
         sid = s["session_id"]
@@ -143,7 +202,7 @@ async def list_chat_sessions():
 
 @router.get("/api/v1/sessions/{session_id}", response_class=HTMLResponse)
 async def load_session(session_id: str):
-    messages = get_session_messages(session_id)
+    messages = _get_messages(session_id)
     html = ""
     for m in messages:
         html += f'<div class="flex justify-end mb-4"><div class="bg-blue-600 text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] shadow">{m["question"]}</div></div>'

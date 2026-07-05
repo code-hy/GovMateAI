@@ -23,7 +23,7 @@ class GovernmentCrawler:
             ),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-AU,en-US;q=0.9,en;q=0.8",
-            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Encoding": "gzip, deflate",
             "DNT": "1",
             "Upgrade-Insecure-Requests": "1",
             "Sec-Fetch-Dest": "document",

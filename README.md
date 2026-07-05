@@ -134,7 +134,7 @@ Visit **http://localhost:8000** to chat with GovMate AI.
 ### Step 5: Launch Monitoring Dashboard (Separate Terminal)
 
 ```bash
-uv run streamlit run monitoring/dashboard.py
+uv run python -m streamlit run monitoring/dashboard.py
 ```
 
 Visit **http://localhost:8501** for real-time metrics.

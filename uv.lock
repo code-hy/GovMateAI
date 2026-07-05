@@ -566,6 +566,7 @@ dependencies = [
     { name = "langchain-text-splitters" },
     { name = "markdownify" },
     { name = "openai" },
+    { name = "pandas" },
     { name = "pdfplumber" },
     { name = "psycopg2-binary" },
     { name = "pydantic" },
@@ -576,6 +577,7 @@ dependencies = [
     { name = "qdrant-client" },
     { name = "requests" },
     { name = "sentence-transformers" },
+    { name = "streamlit" },
     { name = "tenacity" },
     { name = "trafilatura" },
     { name = "uvicorn", extra = ["standard"] },
@@ -585,10 +587,8 @@ dependencies = [
 dev = [
     { name = "httpx" },
     { name = "mypy" },
-    { name = "pandas" },
     { name = "pytest" },
     { name = "ruff" },
-    { name = "streamlit" },
 ]
 
 [package.metadata]
@@ -603,7 +603,7 @@ requires-dist = [
     { name = "markdownify", specifier = ">=0.11.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.9.0" },
     { name = "openai", specifier = ">=1.0.0" },
-    { name = "pandas", marker = "extra == 'dev'", specifier = ">=2.0.0" },
+    { name = "pandas", specifier = ">=2.0.0" },
     { name = "pdfplumber", specifier = ">=0.10.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
@@ -616,7 +616,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.31.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.3.0" },
     { name = "sentence-transformers", specifier = ">=2.5.0" },
-    { name = "streamlit", marker = "extra == 'dev'", specifier = ">=1.30.0" },
+    { name = "streamlit", specifier = ">=1.30.0" },
     { name = "tenacity", specifier = ">=8.2.0" },
     { name = "trafilatura", specifier = ">=1.6.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.29.0" },

@@ -4,6 +4,7 @@ from openai import OpenAI
 
 from backend.core.config import settings
 from backend.rag.metrics import update_relevance_score
+from backend.rag.session_store import update_relevance_local
 
 
 def run_builtin_judge(call_id: str, question: str, answer: str):
@@ -21,6 +22,9 @@ def run_builtin_judge(call_id: str, question: str, answer: str):
         )
         score_text = resp.choices[0].message.content.strip()
         score = float(re.findall(r"0\.\d+|1\.0", score_text)[0])
-        update_relevance_score(call_id, score)
+        try:
+            update_relevance_score(call_id, score)
+        except Exception:
+            update_relevance_local(call_id, score)
     except Exception as e:
         print(f"Judge failed for {call_id}: {e}")

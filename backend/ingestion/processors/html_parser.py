@@ -9,7 +9,17 @@ def parse_html_to_markdown(html: str) -> tuple[str, str]:
         element.decompose()
 
     title_tag = soup.find("h1")
-    title_text = title_tag.text.strip() if title_tag else "Untitled"
+    title_text = "Untitled"
+    if title_tag:
+        title_text = title_tag.text.strip()
+    else:
+        meta_title = soup.find("meta", property="og:title")
+        if meta_title and meta_title.get("content"):
+            title_text = meta_title["content"].strip()
+        else:
+            title_tag2 = soup.find("title")
+            if title_tag2:
+                title_text = title_tag2.text.strip()
 
     md = markdownify(str(soup), heading_style="ATX")
 

@@ -9,6 +9,7 @@ from qdrant_client.models import (
     Distance,
     PayloadSchemaType,
     PointStruct,
+    SparseIndexParams,
     SparseVectorParams,
     VectorParams,
 )
@@ -30,12 +31,12 @@ def run_ingestion():
     if not client.collection_exists(settings.qdrant_collection_name):
         client.create_collection(
             collection_name=settings.qdrant_collection_name,
-            vectors={
+            vectors_config={
                 "dense": VectorParams(
                     size=settings.dense_vector_size, distance=Distance.COSINE
                 )
             },
-            sparse_vectors={"sparse": SparseVectorParams(index=True)},
+            sparse_vectors_config={"sparse": SparseVectorParams(index=SparseIndexParams())},
         )
         client.create_payload_index(
             settings.qdrant_collection_name, "agency", PayloadSchemaType.KEYWORD
@@ -45,7 +46,7 @@ def run_ingestion():
     for source in config["sources"]:
         print(f"\n--- Starting ingestion for {source['name']} ---")
         crawler = GovernmentCrawler(source)
-        crawled_data = crawler.start(max_pages=100)
+        crawled_data = crawler.start(max_pages=200)
 
         for url, data in crawled_data.items():
             raw_html = data["html"]
@@ -65,14 +66,14 @@ def run_ingestion():
             if len(markdown_content) < 100:
                 continue
 
-            md_path.write_text(markdown_content)
+            md_path.write_text(markdown_content, encoding="utf-8")
             metadata = {
                 "url": url,
                 "title": title,
                 "agency": source["name"].upper(),
                 "hash": content_hash,
             }
-            json_path.write_text(json.dumps(metadata))
+            json_path.write_text(json.dumps(metadata), encoding="utf-8")
 
             chunks = chunk_markdown(markdown_content, metadata)
 

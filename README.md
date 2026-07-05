@@ -1,6 +1,6 @@
 # GovMate AI: Australian Government RAG Assistant
 
-[![Python](https://img.shields.io/badge/python-3.12-blue)](https://python.org)
+[![Python](https://img.shields.io/badge/python-3.14-blue)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-green)](https://fastapi.tiangolo.com)
 [![Qdrant](https://img.shields.io/badge/Qdrant-latest-red)](https://qdrant.tech)
 [![DeepSeek](https://img.shields.io/badge/DeepSeek-API-orange)](https://deepseek.com)
@@ -99,7 +99,7 @@ Retrieval accuracy:     3/3 (100%)
 
 ```bash
 git clone <your-repo-url>
-cd govmate-ai
+cd govmateai
 cp .env.example .env
 ```
 
@@ -126,7 +126,7 @@ This crawls ATO and Services Australia websites, chunks the content, generates l
 ### Step 4: Run the App
 
 ```bash
-uv run uvicorn backend.main:app --reload
+uv run python -m uvicorn backend.main:app --reload
 ```
 
 Visit **http://localhost:8000** to chat with GovMate AI.

@@ -1,7 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from openai import OpenAI
@@ -55,8 +55,8 @@ templates = Jinja2Templates(
 
 
 @app.get("/")
-async def read_root():
-    return templates.TemplateResponse("index.html", {"request": {}})
+async def read_root(request: Request):
+    return templates.TemplateResponse(request, "index.html")
 
 
 app.include_router(api_router)

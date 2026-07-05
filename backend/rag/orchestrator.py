@@ -1,3 +1,5 @@
+import json
+
 from openai import OpenAI
 from qdrant_client import QdrantClient
 from sentence_transformers import CrossEncoder
@@ -85,4 +87,4 @@ class RAGOrchestrator:
                 yield content
 
         sources = format_citations(full_answer, top_docs)
-        yield f"__SOURCES__{sources}"
+        yield f"__SOURCES__{json.dumps(sources)}"

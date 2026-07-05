@@ -78,7 +78,7 @@ async def chat_htmx(
 
         full_text = ""
 
-        async for token in orchestrator.process_query_stream(
+        for token in orchestrator.process_query_stream(
             question, session_id
         ):
             if isinstance(token, str) and token.startswith("__SOURCES__"):

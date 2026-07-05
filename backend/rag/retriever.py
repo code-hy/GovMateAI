@@ -1,4 +1,4 @@
-from fastembed import TextEmbedding
+from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     FieldCondition,
@@ -15,17 +15,16 @@ from backend.core.config import settings
 class Retriever:
     def __init__(self, qdrant_client: QdrantClient):
         self.client = qdrant_client
-        self.embedder = TextEmbedding(model_name=settings.embedding_model_name)
+        self.dense_embedder = TextEmbedding(model_name=settings.embedding_model_name)
+        self.sparse_embedder = SparseTextEmbedding(model_name="Qdrant/bm25")
 
     def retrieve(self, query: str, agency_filter: str | None = None) -> list[dict]:
-        query_dense = None
-        query_sparse = None
-        for dense, sparse in self.embedder.embed([query]):
-            query_dense = dense.tolist()
-            query_sparse = {
-                "indices": sparse.indices.tolist(),
-                "values": sparse.values.tolist(),
-            }
+        query_dense = next(self.dense_embedder.embed([query])).tolist()
+        sparse_result = next(self.sparse_embedder.embed([query]))
+        query_sparse = {
+            "indices": sparse_result.indices.tolist(),
+            "values": sparse_result.values.tolist(),
+        }
 
         prefetch_list = [
             Prefetch(query=query_dense, using="dense", limit=settings.retrieval_top_k),

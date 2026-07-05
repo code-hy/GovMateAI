@@ -39,16 +39,16 @@ class GovernmentCrawler:
         return True
 
     def start(self, max_pages: int = 100) -> dict:
-        queue = list(self.config["seeds"])
+        seeds = list(self.config["seeds"])
+        queue = list(seeds)
 
         while queue and len(self.results) < max_pages:
             url = queue.pop(0)
-            url_hash = hash(url)
-            if url_hash in self.visited:
+            if url in self.visited:
                 continue
-            self.visited.add(url_hash)
+            self.visited.add(url)
 
-            if not self.is_valid_url(url):
+            if url not in seeds and not self.is_valid_url(url):
                 continue
 
             try:
@@ -58,7 +58,7 @@ class GovernmentCrawler:
                 soup = BeautifulSoup(html, "html.parser")
                 for link in soup.find_all("a", href=True):
                     full_url = urljoin(url, link["href"])
-                    if hash(full_url) not in self.visited and full_url not in queue:
+                    if full_url not in self.visited and full_url not in queue:
                         queue.append(full_url)
 
                 time.sleep(0.5)

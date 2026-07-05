@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: govmate_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - govmate_network
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    networks:
+      - govmate_network
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    depends_on:
+      - postgres
+      - qdrant
+    volumes:
+      - ../backend:/home/appuser/app/backend
+      - ../frontend:/home/appuser/app/frontend
+      - ../monitoring:/home/appuser/app/monitoring
+      - ../scripts:/home/appuser/app/scripts
+      - ../datasets:/home/appuser/app/datasets
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - govmate_network
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8501:8501"
+    env_file:
+      - ../.env
+    depends_on:
+      - postgres
+    volumes:
+      - ../monitoring:/home/appuser/app/monitoring
+      - ../backend:/home/appuser/app/backend
+    command: streamlit run monitoring/dashboard.py --server.port 8501 --server.address 0.0.0.0
+    networks:
+      - govmate_network
+
+volumes:
+  qdrant_storage:
+  pgdata:
+
+networks:
+  govmate_network:
+    driver: bridge

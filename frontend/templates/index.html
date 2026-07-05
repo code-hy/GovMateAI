@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-col h-screen max-w-5xl mx-auto w-full p-4" x-data="{ isGenerating: false }">
+    <header class="mb-6 text-center">
+        <h1 class="text-3xl font-bold text-gray-800">GovMate AI</h1>
+        <p class="text-sm text-gray-500">Australian Government RAG Assistant</p>
+    </header>
+
+    {% include "components/suggestion_chips.html" %}
+
+    <div id="chat-messages" class="flex-1 overflow-y-auto space-y-4 mb-4 p-4 bg-white rounded-xl shadow-sm border">
+        <div class="text-center text-gray-400 text-sm py-8" id="welcome-message">
+            Ask a question about ATO or Services Australia.
+        </div>
+    </div>
+
+    <form hx-post="/api/v1/chat/htmx"
+          hx-target="#chat-messages"
+          hx-swap="beforeend"
+          hx-on::before-request="$('#welcome-message').remove(); isGenerating = true; document.getElementById('submit-btn').disabled = true;"
+          hx-on::after-request="isGenerating = false; document.getElementById('submit-btn').disabled = false; document.getElementById('question-input').value = '';"
+          class="flex gap-2">
+        <input type="hidden" name="session_id" value="">
+        <input id="question-input"
+               type="text"
+               name="question"
+               required
+               minlength="2"
+               placeholder="Ask a question..."
+               class="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <button id="submit-btn"
+                type="submit"
+                class="bg-blue-600 text-white rounded-xl px-6 py-3 font-medium hover:bg-blue-700 disabled:opacity-50"
+                :disabled="isGenerating">
+            Send
+        </button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+<div class="ml-4 mt-1 text-xs text-gray-500 border-l-2 border-gray-200 pl-2 space-y-1">
+    {% for source in sources %}
+    <a href="{{ source.url }}" target="_blank" class="block hover:text-blue-600">
+        【{{ source.index }}】 {{ source.title }} ({{ source.agency }})
+    </a>
+    {% endfor %}
+</div>

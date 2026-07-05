@@ -1,0 +1,36 @@
+[
+  {
+    "call_id": "5593cb08-b7cb-4ebe-89ff-58f48b5acae0",
+    "session_id": "",
+    "question": "can i claim benefits from medicare if i lost my job",
+    "answer": "I cannot find specific information regarding this in the current documents. The context provided covers Medicare claims for medical services, reportable fringe benefits, private health insurance offsets, and Special Benefit for those ineligible for other income support, but it does not address claiming Medicare benefits specifically due to job loss.",
+    "context": [
+      {
+        "title": "Medicare online account help - Make a Medicare claim",
+        "agency": "SERVICES_AUSTRALIA"
+      },
+      {
+        "title": "Medicare online account help - Make a Medicare claim",
+        "agency": "SERVICES_AUSTRALIA"
+      },
+      {
+        "title": "Medicare online account help - Make a Medicare claim",
+        "agency": "SERVICES_AUSTRALIA"
+      },
+      {
+        "title": "Medicare online account help - Make a Medicare claim",
+        "agency": "SERVICES_AUSTRALIA"
+      },
+      {
+        "title": "Payments and claims",
+        "agency": "SERVICES_AUSTRALIA"
+      }
+    ],
+    "latency_seconds": 5.17760443687439,
+    "prompt_tokens": 3051,
+    "completion_tokens": 65,
+    "feedback": 0,
+    "relevance_score": null,
+    "created_at": "2026-07-05T20:32:46.589641"
+  }
+]

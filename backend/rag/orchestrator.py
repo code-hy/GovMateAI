@@ -7,6 +7,7 @@ from sentence_transformers import CrossEncoder
 from backend.core.config import settings
 from backend.rag.citation_formatter import format_citations
 from backend.rag.prompt_builder import build_prompt
+from backend.rag.query_rewriter import rewrite_query
 from backend.rag.reranker import Reranker
 from backend.rag.retriever import Retriever
 
@@ -32,7 +33,8 @@ class RAGOrchestrator:
             -(self.config.max_history_turns * 2) :
         ]
 
-        retrieved_docs = self.retriever.retrieve(question)
+        rewritten = rewrite_query(question, self.llm)
+        retrieved_docs = self.retriever.retrieve(rewritten)
         top_docs = self.reranker.rerank(
             question, retrieved_docs, self.config.rerank_top_k
         )
@@ -66,7 +68,8 @@ class RAGOrchestrator:
         history = self.sessions.get(session_id, [])[
             -(self.config.max_history_turns * 2) :
         ]
-        retrieved_docs = self.retriever.retrieve(question)
+        rewritten = rewrite_query(question, self.llm)
+        retrieved_docs = self.retriever.retrieve(rewritten)
         top_docs = self.reranker.rerank(
             question, retrieved_docs, self.config.rerank_top_k
         )

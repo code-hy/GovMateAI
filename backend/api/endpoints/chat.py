@@ -3,9 +3,10 @@ import time
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 
 from backend.api.deps import get_orchestrator
+from backend.core.database import create_session, get_session_messages, list_sessions, update_session_timestamp
 from backend.models.schemas import ChatRequest, ChatResponse
 from backend.rag.judge import run_builtin_judge
 from backend.rag.metrics import save_llm_call, update_feedback
@@ -105,7 +106,10 @@ async def chat_htmx(
         latency = time.time() - start_time
         prompt_tokens = len(question) + 3000
         completion_tokens = int(len(full_text.split()) * 1.3)
-        top_docs = orchestrator.retriever.retrieve(question)[:5]
+        rewritten = orchestrator.retriever.retrieve(question)[:5]
+        top_docs = orchestrator.reranker.rerank(question, rewritten, 5)
+
+        create_session(session_id, question[:80])
 
         background_tasks.add_task(
             save_llm_call,
@@ -121,5 +125,27 @@ async def chat_htmx(
         background_tasks.add_task(
             run_builtin_judge, call_id, question, full_text
         )
+        background_tasks.add_task(update_session_timestamp, session_id)
 
     return StreamingResponse(generate(), media_type="text/html")
+
+
+@router.get("/api/v1/sessions", response_class=HTMLResponse)
+async def list_chat_sessions():
+    sessions = list_sessions()
+    items = ""
+    for s in sessions:
+        sid = s["session_id"]
+        title = s["title"]
+        items += f'<a href="#" class="session-item block px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded-lg truncate" data-session="{sid}">{title}</a>'
+    return HTMLResponse(items)
+
+
+@router.get("/api/v1/sessions/{session_id}", response_class=HTMLResponse)
+async def load_session(session_id: str):
+    messages = get_session_messages(session_id)
+    html = ""
+    for m in messages:
+        html += f'<div class="flex justify-end mb-4"><div class="bg-blue-600 text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] shadow">{m["question"]}</div></div>'
+        html += f'<div class="flex justify-start mb-2"><div class="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 max-w-[80%] shadow-sm prose prose-sm max-w-none"><p>{m["answer"]}</p></div></div>'
+    return HTMLResponse(html)

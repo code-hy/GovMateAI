@@ -167,6 +167,7 @@ govmate-ai/
 │       ├── retriever.py        # Qdrant hybrid search (RRF)
 │       ├── reranker.py         # Cross-encoder re-ranking
 │       ├── prompt_builder.py   # System + user prompt construction
+│       ├── query_rewriter.py   # Slang → formal query reformulation
 │       ├── citation_formatter.py  # 【X】→ URL mapping
 │       ├── orchestrator.py     # Ties retrieval + generation
 │       ├── metrics.py          # PostgreSQL metric logging
@@ -226,15 +227,16 @@ User feedback is collected via 👍/👎 buttons rendered by HTMX after each ans
 | Containerization | 2 | ✅ | Full Docker Compose (4 services) |
 | Reproducibility | 2 | ✅ | `uv sync`, lock file, `.env.example`, public data source |
 | **Best Practice: Hybrid Search** | +1 | ✅ | Qdrant RRF (Dense + Sparse) |
+| **Best Practice: Query Rewriting** | +1 | ✅ | DeepSeek reformulates slang → formal terms ("dole" → "JobSeeker Payment") |
 | **Best Practice: Re-ranking** | +1 | ✅ | Cross-encoder re-ranks 15→5 |
-| **Best Practice: Query Rewriting** | +1 | ❌ | Not implemented |
 | **Bonus: LLM-as-a-Judge** | +2 | ✅ | Background DeepSeek relevance scoring |
-| **Total** | **21** | **~19** | Strong passing grade |
+| **Total** | **21** | **~20** | Strong passing grade |
 
 ---
 
 ## Best Practices Implemented
 
+- ✅ **Query Rewriting**: DeepSeek reformulates slang terms into formal program names ("dole" → "JobSeeker Payment")
 - ✅ **Hybrid Search**: Native Dense + Sparse vectors via Qdrant RRF
 - ✅ **Document Re-ranking**: Cross-encoder (`MiniLM-L-6-v2`) for precision
 - ✅ **Metadata Filtering**: Agency-level payload indexing in Qdrant

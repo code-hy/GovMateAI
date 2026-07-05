@@ -1,39 +1,78 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="flex flex-col h-screen max-w-5xl mx-auto w-full p-4" x-data="{ isGenerating: false }">
-    <header class="mb-6 text-center">
-        <h1 class="text-3xl font-bold text-gray-800">GovMate AI</h1>
-        <p class="text-sm text-gray-500">Australian Government RAG Assistant</p>
-    </header>
-
-    {% include "components/suggestion_chips.html" %}
-
-    <div id="chat-messages" class="flex-1 overflow-y-auto space-y-4 mb-4 p-4 bg-white rounded-xl shadow-sm border">
-        <div class="text-center text-gray-400 text-sm py-8" id="welcome-message">
-            Ask a question about ATO or Services Australia.
+<div class="flex h-screen w-full" x-data="{ sidebarOpen: true, currentSession: '' }">
+    <div class="bg-gray-900 text-white flex flex-col transition-all duration-300"
+         :class="sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'">
+        <div class="p-3 border-b border-gray-700">
+            <button class="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-lg px-4 py-2.5 text-sm font-medium flex items-center gap-2"
+                    hx-get="/"
+                    hx-target="body"
+                    hx-swap="outerHTML"
+                    onclick="localStorage.removeItem('currentSession')">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                New Chat
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-2 space-y-1" id="session-list"
+             hx-get="/api/v1/sessions"
+             hx-trigger="load, every:5000ms"
+             hx-swap="innerHTML">
         </div>
     </div>
 
-    <form hx-post="/api/v1/chat/htmx"
-          hx-target="#chat-messages"
-          hx-swap="beforeend"
-          hx-on::before-request="$('#welcome-message').remove(); isGenerating = true; document.getElementById('submit-btn').disabled = true;"
-          hx-on::after-request="isGenerating = false; document.getElementById('submit-btn').disabled = false; document.getElementById('question-input').value = '';"
-          class="flex gap-2">
-        <input type="hidden" name="session_id" value="">
-        <input id="question-input"
-               type="text"
-               name="question"
-               required
-               minlength="2"
-               placeholder="Ask a question..."
-               class="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
-        <button id="submit-btn"
-                type="submit"
-                class="bg-blue-600 text-white rounded-xl px-6 py-3 font-medium hover:bg-blue-700 disabled:opacity-50"
-                :disabled="isGenerating">
-            Send
-        </button>
-    </form>
+    <div class="flex-1 flex flex-col min-w-0">
+        <div class="flex items-center px-4 py-2 border-b border-gray-200 bg-white">
+            <button class="text-gray-500 hover:text-gray-700 mr-3" x-on:click="sidebarOpen = !sidebarOpen">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <h1 class="text-lg font-semibold text-gray-800">GovMate AI</h1>
+            <span class="text-xs text-gray-400 ml-2">Australian Government RAG Assistant</span>
+        </div>
+
+        <div class="flex-1 flex flex-col max-w-5xl mx-auto w-full p-4" x-data="{ isGenerating: false }">
+            <div id="chat-messages" class="flex-1 overflow-y-auto space-y-4 mb-4 p-4 bg-white rounded-xl shadow-sm border">
+                <div class="text-center text-gray-400 text-sm py-8" id="welcome-message">
+                    Ask a question about ATO or Services Australia.
+                </div>
+            </div>
+
+            <form hx-post="/api/v1/chat/htmx"
+                  hx-target="#chat-messages"
+                  hx-swap="beforeend"
+                  hx-on::before-request="$('#welcome-message').remove(); isGenerating = true; document.getElementById('submit-btn').disabled = true; let inp = document.querySelector('input[name=session_id]'); if (!inp.value) inp.value = crypto.randomUUID();"
+                  hx-on::after-request="isGenerating = false; document.getElementById('submit-btn').disabled = false; const input = document.getElementById('question-input'); input.value = ''; input.focus();"
+                  class="flex gap-2">
+                <input type="hidden" name="session_id" id="session-id-input" value="">
+                <input id="question-input"
+                       type="text"
+                       name="question"
+                       required
+                       minlength="2"
+                       placeholder="Ask about ATO, Centrelink, Medicare..."
+                       class="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <button id="submit-btn"
+                        type="submit"
+                        class="bg-blue-600 text-white rounded-xl px-6 py-3 font-medium hover:bg-blue-700 disabled:opacity-50"
+                        :disabled="isGenerating">
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
+
+<script>
+document.body.addEventListener('click', function(evt) {
+    const item = evt.target.closest('.session-item');
+    if (item) {
+        const sessionId = item.dataset.session;
+        document.getElementById('session-id-input').value = sessionId;
+        htmx.ajax('GET', '/api/v1/sessions/' + sessionId, {target: '#chat-messages', swap: 'innerHTML'});
+    }
+});
+</script>
 {% endblock %}

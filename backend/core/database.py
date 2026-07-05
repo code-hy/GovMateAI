@@ -8,7 +8,7 @@ from backend.core.config import settings
 
 
 def get_db_connection():
-    return psycopg2.connect(settings.database_url)
+    return psycopg2.connect(settings.database_url, connect_timeout=2)
 
 
 def init_db():

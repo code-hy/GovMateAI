@@ -27,10 +27,11 @@ router = APIRouter()
 
 
 def _save_session(session_id, title):
+    file_create_session(session_id, title)
     try:
         db_create_session(session_id, title)
     except Exception:
-        file_create_session(session_id, title)
+        pass
 
 
 def _list_sessions():
@@ -48,6 +49,16 @@ def _get_messages(session_id):
 
 
 def _save_call(call_id, session_id, question, answer, context_docs, latency, prompt_tokens, completion_tokens):
+    save_llm_call_local(
+        call_id=call_id,
+        session_id=session_id,
+        question=question,
+        answer=answer,
+        context_docs=context_docs,
+        latency=latency,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+    )
     try:
         save_llm_call(
             call_id=call_id,
@@ -60,16 +71,7 @@ def _save_call(call_id, session_id, question, answer, context_docs, latency, pro
             completion_tokens=completion_tokens,
         )
     except Exception:
-        save_llm_call_local(
-            call_id=call_id,
-            session_id=session_id,
-            question=question,
-            answer=answer,
-            context_docs=context_docs,
-            latency=latency,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-        )
+        pass
 
 
 @router.post("/api/v1/feedback")

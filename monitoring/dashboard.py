@@ -17,7 +17,7 @@ CALLS_FILE = DATA_DIR / "llm_calls.json"
 
 def get_data():
     try:
-        conn = psycopg2.connect(DB_URL)
+        conn = psycopg2.connect(DB_URL, connect_timeout=2)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
             """
@@ -37,7 +37,10 @@ def get_data():
         if CALLS_FILE.exists():
             with open(CALLS_FILE) as f:
                 data = json.load(f)
-            return pd.DataFrame(data)
+            df = pd.DataFrame(data)
+            if not df.empty and "created_at" in df.columns:
+                df["created_at"] = pd.to_datetime(df["created_at"])
+            return df
         return pd.DataFrame()
 
 
@@ -46,6 +49,19 @@ df = get_data()
 if df.empty:
     st.warning("No data yet. Ask some questions in the main chat app first!")
     st.stop()
+
+if "total_cost" not in df.columns:
+    df["total_cost"] = 0.0
+if "feedback" not in df.columns:
+    df["feedback"] = 0
+if "relevance_score" not in df.columns:
+    df["relevance_score"] = None
+if "latency_seconds" not in df.columns:
+    df["latency_seconds"] = 0.0
+if "prompt_tokens" not in df.columns:
+    df["prompt_tokens"] = 0
+if "completion_tokens" not in df.columns:
+    df["completion_tokens"] = 0
 
 df["created_at"] = pd.to_datetime(df["created_at"])
 df = df.sort_values("created_at")

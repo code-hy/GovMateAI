@@ -1,3 +1,7 @@
+import json
+import os
+from pathlib import Path
+
 import streamlit as st
 import pandas as pd
 import psycopg2
@@ -6,26 +10,35 @@ from psycopg2.extras import RealDictCursor
 st.set_page_config(page_title="GovMate AI Monitoring", layout="wide")
 st.title("GovMate AI Monitoring Dashboard")
 
-DB_URL = st.secrets.get("DATABASE_URL") or "postgresql://postgres:postgres@localhost:5432/govmate_db"
+DB_URL = os.environ.get("DATABASE_URL") or "postgresql://postgres:postgres@localhost:5435/govmate_db"
+DATA_DIR = Path(__file__).parent.parent / "datasets"
+CALLS_FILE = DATA_DIR / "llm_calls.json"
 
 
 def get_data():
-    conn = psycopg2.connect(DB_URL)
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
+    try:
+        conn = psycopg2.connect(DB_URL)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(
+            """
+            SELECT call_id, session_id, question, answer, latency_seconds,
+                   prompt_tokens, completion_tokens, total_cost, feedback, relevance_score,
+                   created_at
+            FROM llm_calls
+            ORDER BY created_at DESC
+            LIMIT 500
         """
-        SELECT call_id, session_id, question, answer, latency_seconds,
-               prompt_tokens, completion_tokens, total_cost, feedback, relevance_score,
-               created_at
-        FROM llm_calls
-        ORDER BY created_at DESC
-        LIMIT 500
-    """
-    )
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return pd.DataFrame(rows)
+        )
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return pd.DataFrame(rows)
+    except Exception:
+        if CALLS_FILE.exists():
+            with open(CALLS_FILE) as f:
+                data = json.load(f)
+            return pd.DataFrame(data)
+        return pd.DataFrame()
 
 
 df = get_data()

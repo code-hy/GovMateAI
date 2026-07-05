@@ -96,3 +96,6 @@ marimo/_lsp/
 __marimo__/
 .streamlit/secrets.toml
 MANIFEST
+
+datasets/sessions.json
+datasets/llm_calls.json

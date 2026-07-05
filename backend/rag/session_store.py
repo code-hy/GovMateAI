@@ -63,6 +63,9 @@ def save_llm_call_local(
     prompt_tokens: int,
     completion_tokens: int,
 ):
+    cost = (prompt_tokens / 1000.0 * 0.00014) + (
+        completion_tokens / 1000.0 * 0.00028
+    )
     calls = _read(CALLS_FILE)
     calls.append({
         "call_id": call_id,
@@ -76,6 +79,7 @@ def save_llm_call_local(
         "latency_seconds": latency,
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
+        "total_cost": cost,
         "feedback": 0,
         "relevance_score": None,
         "created_at": datetime.now().isoformat(),

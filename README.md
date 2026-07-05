@@ -126,7 +126,7 @@ This crawls ATO and Services Australia websites, chunks the content, generates l
 ### Step 4: Run the App
 
 ```bash
-uv run python -m uvicorn backend.main:app --reload
+uv run python -m uvicorn backend.main:app --reload --reload-exclude monitoring/
 ```
 
 Visit **http://localhost:8000** to chat with GovMate AI.

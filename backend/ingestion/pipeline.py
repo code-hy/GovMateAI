@@ -21,6 +21,57 @@ from backend.ingestion.embedders.local_embedder import get_embeddings
 from backend.ingestion.processors.html_parser import parse_html_to_markdown
 
 
+def _upload_page(
+    client: QdrantClient,
+    url: str,
+    title: str,
+    agency: str,
+    markdown_content: str,
+):
+    chunks = chunk_markdown(markdown_content, {"url": url, "title": title, "agency": agency})
+    texts = [c["text"] for c in chunks]
+    dense_vectors, sparse_vectors = get_embeddings(texts)
+
+    try:
+        old_ids = client.scroll(
+            settings.qdrant_collection_name,
+            scroll_filter={"must": [{"key": "document_url", "match": {"value": url}}]},
+            limit=100,
+        )[0]
+        if old_ids:
+            client.delete(settings.qdrant_collection_name, [p.id for p in old_ids])
+    except Exception:
+        pass
+
+    points = []
+    for i, chunk in enumerate(chunks):
+        point_id = hashlib.md5(f"{url}_{i}".encode()).hexdigest()
+        points.append(
+            PointStruct(
+                id=point_id,
+                vector={"dense": dense_vectors[i], "sparse": sparse_vectors[i]},
+                payload=chunk,
+            )
+        )
+    client.upsert(settings.qdrant_collection_name, points)
+    print(f"  {title}: {len(chunks)} chunks upserted")
+
+
+def _upload_cached_pages(client: QdrantClient, agency_name: str):
+    processed_dir = Path(f"datasets/processed/{agency_name}")
+    if not processed_dir.exists():
+        return
+    for json_path in processed_dir.glob("*.json"):
+        metadata = json.loads(json_path.read_text(encoding="utf-8"))
+        md_path = json_path.with_suffix(".md")
+        if not md_path.exists():
+            continue
+        title = metadata.get("title", "Untitled")
+        url = metadata.get("url", "")
+        markdown_content = md_path.read_text(encoding="utf-8")
+        _upload_page(client, url, title, agency_name.upper(), markdown_content)
+
+
 def run_ingestion():
     print("Loading seeds.yaml...")
     with open("datasets/seeds.yaml", "r") as f:
@@ -57,7 +108,8 @@ def run_ingestion():
             pass
 
     for source in config["sources"]:
-        print(f"\n--- Starting ingestion for {source['name']} ---")
+        agency_name = source["name"]
+        print(f"\n--- Starting ingestion for {agency_name} ---")
         crawler = GovernmentCrawler(source)
         crawled_data = crawler.start(max_pages=200)
 
@@ -65,9 +117,8 @@ def run_ingestion():
             raw_html = data["html"]
             content_hash = hashlib.sha256(raw_html.encode()).hexdigest()
 
-            processed_dir = Path(f"datasets/processed/{source['name']}")
+            processed_dir = Path(f"datasets/processed/{agency_name}")
             md_path = processed_dir / f"{content_hash}.md"
-            json_path = processed_dir / f"{content_hash}.json"
 
             if md_path.exists():
                 print(f"Skipping {url} (already processed)")
@@ -83,48 +134,15 @@ def run_ingestion():
             metadata = {
                 "url": url,
                 "title": title,
-                "agency": source["name"].upper(),
+                "agency": agency_name.upper(),
                 "hash": content_hash,
             }
+            json_path = processed_dir / f"{content_hash}.json"
             json_path.write_text(json.dumps(metadata), encoding="utf-8")
 
-            chunks = chunk_markdown(markdown_content, metadata)
+            _upload_page(client, url, title, agency_name.upper(), markdown_content)
 
-            texts = [c["text"] for c in chunks]
-            dense_vectors, sparse_vectors = get_embeddings(texts)
-
-            try:
-                old_ids = client.scroll(
-                    settings.qdrant_collection_name,
-                    scroll_filter={
-                        "must": [{"key": "document_url", "match": {"value": url}}]
-                    },
-                    limit=100,
-                )[0]
-                if old_ids:
-                    client.delete(
-                        settings.qdrant_collection_name,
-                        [p.id for p in old_ids],
-                    )
-            except Exception:
-                pass
-
-            points = []
-            for i, chunk in enumerate(chunks):
-                point_id = hashlib.md5(
-                    f"{url}_{i}".encode()
-                ).hexdigest()
-                points.append(
-                    PointStruct(
-                        id=point_id,
-                        vector={
-                            "dense": dense_vectors[i],
-                            "sparse": sparse_vectors[i],
-                        },
-                        payload=chunk,
-                    )
-                )
-            client.upsert(settings.qdrant_collection_name, points)
-            print(f"  {title}: {len(chunks)} chunks upserted")
+        print(f"\nUploading cached pages for {agency_name}...")
+        _upload_cached_pages(client, agency_name)
 
     print("\nIngestion complete!")

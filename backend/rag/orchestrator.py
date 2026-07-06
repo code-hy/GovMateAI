@@ -34,8 +34,9 @@ class RAGOrchestrator:
 
         rewritten = rewrite_query(question, self.llm)
         retrieved_docs = self.retriever.retrieve(rewritten)
+        top_k = self.config.rerank_top_k if self.reranker.model else 10
         top_docs = self.reranker.rerank(
-            question, retrieved_docs, self.config.rerank_top_k
+            question, retrieved_docs, top_k
         )
         messages = build_prompt(question, top_docs, history)
 
@@ -69,8 +70,9 @@ class RAGOrchestrator:
         ]
         rewritten = rewrite_query(question, self.llm)
         retrieved_docs = self.retriever.retrieve(rewritten)
+        top_k = self.config.rerank_top_k if self.reranker.model else 10
         top_docs = self.reranker.rerank(
-            question, retrieved_docs, self.config.rerank_top_k
+            question, retrieved_docs, top_k
         )
         messages = build_prompt(question, top_docs, history)
 

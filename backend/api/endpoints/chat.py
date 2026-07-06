@@ -97,29 +97,32 @@ async def chat_json(
     if not req.session_id:
         req.session_id = str(uuid.uuid4())
 
-    start = time.time()
-    result = orchestrator.process_query(req.question, req.session_id)
-    latency = time.time() - start
+    try:
+        start = time.time()
+        result = orchestrator.process_query(req.question, req.session_id)
+        latency = time.time() - start
 
-    prompt_tokens = len(req.question) + 3000
-    completion_tokens = int(len(result["answer"].split()) * 1.3)
+        prompt_tokens = len(req.question) + 3000
+        completion_tokens = int(len(result["answer"].split()) * 1.3)
 
-    background_tasks.add_task(
-        _save_call,
-        call_id=call_id,
-        session_id=req.session_id,
-        question=req.question,
-        answer=result["answer"],
-        context_docs=result["source_docs"],
-        latency=latency,
-        prompt_tokens=prompt_tokens,
-        completion_tokens=completion_tokens,
-    )
-    background_tasks.add_task(
-        run_builtin_judge, call_id, req.question, result["answer"]
-    )
+        background_tasks.add_task(
+            _save_call,
+            call_id=call_id,
+            session_id=req.session_id,
+            question=req.question,
+            answer=result["answer"],
+            context_docs=result["source_docs"],
+            latency=latency,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+        )
+        background_tasks.add_task(
+            run_builtin_judge, call_id, req.question, result["answer"]
+        )
 
-    return ChatResponse(answer=result["answer"], sources=result["sources"])
+        return ChatResponse(answer=result["answer"], sources=result["sources"])
+    except Exception as e:
+        return ChatResponse(answer=f"Error: {e}", sources=[])
 
 
 @router.post("/api/v1/chat/htmx")
@@ -141,29 +144,31 @@ async def chat_htmx(
 
         full_text = ""
 
-        for token in orchestrator.process_query_stream(
-            question, session_id
-        ):
-            if isinstance(token, str) and token.startswith("__SOURCES__"):
-                yield "</div></div>"
-                sources = json.loads(token.replace("__SOURCES__", ""))
-                if sources:
-                    yield f'<div class="ml-4 mt-1 text-xs text-gray-500 border-l-2 border-gray-200 pl-2 space-y-1">'
-                    for s in sources:
-                        yield f'<a href="{s["url"]}" target="_blank" class="block hover:text-blue-600">【{s["index"]}】 {s["title"]} ({s["agency"]})</a>'
+        try:
+            for token in orchestrator.process_query_stream(
+                question, session_id
+            ):
+                if isinstance(token, str) and token.startswith("__SOURCES__"):
+                    yield "</div></div>"
+                    sources = json.loads(token.replace("__SOURCES__", ""))
+                    if sources:
+                        yield f'<div class="ml-4 mt-1 text-xs text-gray-500 border-l-2 border-gray-200 pl-2 space-y-1">'
+                        for s in sources:
+                            yield f'<a href="{s["url"]}" target="_blank" class="block hover:text-blue-600">【{s["index"]}】 {s["title"]} ({s["agency"]})</a>'
+                        yield "</div>"
+
+                    yield f'<div class="flex gap-3 mt-3 ml-4" id="fb-{call_id}">'
+                    yield f'<span class="text-xs text-gray-400 mt-1">Helpful?</span>'
+                    yield f'<button class="text-sm hover:text-green-600" hx-post="/api/v1/feedback" hx-vals=\'{{"call_id":"{call_id}","feedback":"1"}}\' hx-target="#fb-{call_id}" hx-swap="outerHTML">👍</button>'
+                    yield f'<button class="text-sm hover:text-red-600" hx-post="/api/v1/feedback" hx-vals=\'{{"call_id":"{call_id}","feedback":"-1"}}\' hx-target="#fb-{call_id}" hx-swap="outerHTML">👎</button>'
                     yield "</div>"
-
-                yield f'<div class="flex gap-3 mt-3 ml-4" id="fb-{call_id}">'
-                yield f'<span class="text-xs text-gray-400 mt-1">Helpful?</span>'
-                yield f'<button class="text-sm hover:text-green-600" hx-post="/api/v1/feedback" hx-vals=\'{{"call_id":"{call_id}","feedback":"1"}}\' hx-target="#fb-{call_id}" hx-swap="outerHTML">👍</button>'
-                yield f'<button class="text-sm hover:text-red-600" hx-post="/api/v1/feedback" hx-vals=\'{{"call_id":"{call_id}","feedback":"-1"}}\' hx-target="#fb-{call_id}" hx-swap="outerHTML">👎</button>'
-                yield "</div>"
-            else:
-                full_text += token
-                yield token
-
-        if not full_text:
-            yield "</div></div>"
+                else:
+                    full_text += token
+                    yield token
+        except Exception as e:
+            yield f'<p class="text-red-600"><strong>Error:</strong> {e}</p>'
+            import traceback
+            yield f'<pre class="text-xs text-red-400 mt-1 whitespace-pre-wrap">{traceback.format_exc()}</pre>'
 
         latency = time.time() - start_time
         prompt_tokens = len(question) + 3000

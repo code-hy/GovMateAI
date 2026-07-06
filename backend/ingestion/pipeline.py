@@ -46,10 +46,15 @@ def run_ingestion():
             },
             sparse_vectors_config={"sparse": SparseVectorParams(index=SparseIndexParams())},
         )
-        client.create_payload_index(
-            settings.qdrant_collection_name, "agency", PayloadSchemaType.KEYWORD
-        )
         print(f"Created collection '{settings.qdrant_collection_name}'")
+
+    for idx_field in ("agency", "document_url"):
+        try:
+            client.create_payload_index(
+                settings.qdrant_collection_name, idx_field, PayloadSchemaType.KEYWORD
+            )
+        except Exception:
+            pass
 
     for source in config["sources"]:
         print(f"\n--- Starting ingestion for {source['name']} ---")
@@ -88,18 +93,21 @@ def run_ingestion():
             texts = [c["text"] for c in chunks]
             dense_vectors, sparse_vectors = get_embeddings(texts)
 
-            old_ids = client.scroll(
-                settings.qdrant_collection_name,
-                scroll_filter={
-                    "must": [{"key": "document_url", "match": {"value": url}}]
-                },
-                limit=100,
-            )[0]
-            if old_ids:
-                client.delete(
+            try:
+                old_ids = client.scroll(
                     settings.qdrant_collection_name,
-                    [p.id for p in old_ids],
-                )
+                    scroll_filter={
+                        "must": [{"key": "document_url", "match": {"value": url}}]
+                    },
+                    limit=100,
+                )[0]
+                if old_ids:
+                    client.delete(
+                        settings.qdrant_collection_name,
+                        [p.id for p in old_ids],
+                    )
+            except Exception:
+                pass
 
             points = []
             for i, chunk in enumerate(chunks):

@@ -13,9 +13,16 @@ router = APIRouter()
 async def health(orchestrator: RAGOrchestrator = Depends(get_orchestrator)):
     try:
         orchestrator.retriever.client.get_collections()
-        return {"status": "ok", "qdrant_connected": True}
-    except Exception:
-        return {"status": "error", "qdrant_connected": False}
+        has_collection = orchestrator.retriever.client.collection_exists(
+            settings.qdrant_collection_name
+        )
+        return {
+            "status": "ok",
+            "qdrant_connected": True,
+            "collection_exists": has_collection,
+        }
+    except Exception as e:
+        return {"status": "error", "qdrant_connected": False, "error": str(e)}
 
 
 @router.get("/api/v1/debug")
@@ -29,6 +36,9 @@ async def debug(orchestrator: RAGOrchestrator = Depends(get_orchestrator)):
     try:
         orchestrator.retriever.client.get_collections()
         results["qdrant"] = "ok"
+        results["collection_exists"] = orchestrator.retriever.client.collection_exists(
+            settings.qdrant_collection_name
+        )
     except Exception as e:
         results["qdrant"] = f"error: {e}"
 

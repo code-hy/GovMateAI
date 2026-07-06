@@ -19,6 +19,11 @@ class Retriever:
         self.sparse_embedder = SparseTextEmbedding(model_name="Qdrant/bm25")
 
     def retrieve(self, query: str, agency_filter: str | None = None) -> list[dict]:
+        if not self.client.collection_exists(settings.qdrant_collection_name):
+            raise RuntimeError(
+                f"Qdrant collection '{settings.qdrant_collection_name}' does not exist. "
+                "Run ingestion first: `uv run python scripts/run_ingestion.py`"
+            )
         query_dense = next(self.dense_embedder.embed([query])).tolist()
         sparse_result = next(self.sparse_embedder.embed([query]))
         query_sparse = {

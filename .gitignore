@@ -99,3 +99,4 @@ MANIFEST
 
 datasets/sessions.json
 datasets/llm_calls.json
+.vercel

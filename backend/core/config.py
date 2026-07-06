@@ -14,6 +14,8 @@ class Settings(BaseSettings):
 
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
+    qdrant_api_key: str = ""
+    qdrant_https: bool = False
     qdrant_collection_name: str = "government_documents"
     dense_vector_size: int = 384
     embedding_model_name: str = "BAAI/bge-small-en-v1.5"

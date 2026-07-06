@@ -1,8 +1,5 @@
-from sentence_transformers import CrossEncoder
-
-
 class Reranker:
-    def __init__(self, model: CrossEncoder):
+    def __init__(self, model=None):
         self.model = model
 
     def rerank(
@@ -10,6 +7,8 @@ class Reranker:
     ) -> list[dict]:
         if not documents:
             return []
+        if self.model is None:
+            return documents[:top_k]
         pairs = [[query, doc["text"]] for doc in documents]
         scores = self.model.predict(pairs)
         scored = list(zip(documents, scores))

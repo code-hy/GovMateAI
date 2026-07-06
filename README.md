@@ -9,6 +9,7 @@ A locally-deployable, citation-grounded Retrieval-Augmented Generation (RAG) sys
 
 > New to RAG or LLMs? See [WALKTHROUGH.md](./WALKTHROUGH.md) for a beginner-friendly explanation of every component.
 > Just want to run it? See [QUICKSTART.md](./QUICKSTART.md) for copy-paste commands.
+> Want to deploy to the cloud? See [CLOUDDEPLOYMENT.md](./CLOUDDEPLOYMENT.md).
 
 ---
 

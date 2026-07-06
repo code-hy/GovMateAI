@@ -1,0 +1,16 @@
+# Exclude local development files from Vercel deployment
+datasets/
+docker/
+monitoring/
+scripts/
+screenshots/
+.venv/
+.idea/
+.vscode/
+*.md
+*.toml
+uv.lock
+ruff.toml
+.env
+.env.example
+.gitignore

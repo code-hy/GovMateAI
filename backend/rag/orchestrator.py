@@ -2,7 +2,6 @@ import json
 
 from openai import OpenAI
 from qdrant_client import QdrantClient
-from sentence_transformers import CrossEncoder
 
 from backend.core.config import settings
 from backend.rag.citation_formatter import format_citations
@@ -17,7 +16,7 @@ class RAGOrchestrator:
         self,
         qdrant_client: QdrantClient,
         openai_client: OpenAI,
-        reranker: CrossEncoder,
+        reranker,
         config: settings,
     ):
         self.config = config

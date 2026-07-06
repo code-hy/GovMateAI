@@ -52,26 +52,20 @@ def save_llm_call(
 
 
 def update_feedback(call_id: str, feedback: int):
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE llm_calls SET feedback = %s WHERE call_id = %s",
-                    (feedback, call_id),
-                )
-                conn.commit()
-    except Exception as e:
-        print(f"Failed to update feedback: {e}")
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE llm_calls SET feedback = %s WHERE call_id = %s",
+                (feedback, call_id),
+            )
+            conn.commit()
 
 
 def update_relevance_score(call_id: str, score: float):
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE llm_calls SET relevance_score = %s WHERE call_id = %s",
-                    (score, call_id),
-                )
-                conn.commit()
-    except Exception as e:
-        print(f"Failed to update judge score: {e}")
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE llm_calls SET relevance_score = %s WHERE call_id = %s",
+                (score, call_id),
+            )
+            conn.commit()

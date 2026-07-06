@@ -27,8 +27,11 @@ def _upload_page(
     title: str,
     agency: str,
     markdown_content: str,
+    content_hash: str = "",
 ):
-    chunks = chunk_markdown(markdown_content, {"url": url, "title": title, "agency": agency})
+    if not content_hash:
+        content_hash = hashlib.sha256(markdown_content.encode()).hexdigest()
+    chunks = chunk_markdown(markdown_content, {"url": url, "title": title, "agency": agency, "hash": content_hash})
     texts = [c["text"] for c in chunks]
     dense_vectors, sparse_vectors = get_embeddings(texts)
 
@@ -68,8 +71,9 @@ def _upload_cached_pages(client: QdrantClient, agency_name: str):
             continue
         title = metadata.get("title", "Untitled")
         url = metadata.get("url", "")
+        content_hash = metadata.get("hash", "")
         markdown_content = md_path.read_text(encoding="utf-8")
-        _upload_page(client, url, title, agency_name.upper(), markdown_content)
+        _upload_page(client, url, title, agency_name.upper(), markdown_content, content_hash)
 
 
 def run_ingestion():
@@ -140,7 +144,7 @@ def run_ingestion():
             json_path = processed_dir / f"{content_hash}.json"
             json_path.write_text(json.dumps(metadata), encoding="utf-8")
 
-            _upload_page(client, url, title, agency_name.upper(), markdown_content)
+            _upload_page(client, url, title, agency_name.upper(), markdown_content, content_hash)
 
         print(f"\nUploading cached pages for {agency_name}...")
         _upload_cached_pages(client, agency_name)

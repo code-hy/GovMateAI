@@ -26,7 +26,15 @@ def run_ingestion():
     with open("datasets/seeds.yaml", "r") as f:
         config = yaml.safe_load(f)
 
-    client = QdrantClient(host=settings.qdrant_host, port=settings.qdrant_port)
+    qdrant_kwargs = {
+        "host": settings.qdrant_host,
+        "port": settings.qdrant_port,
+    }
+    if settings.qdrant_api_key:
+        qdrant_kwargs["api_key"] = settings.qdrant_api_key
+    if settings.qdrant_https or settings.qdrant_api_key:
+        qdrant_kwargs["https"] = True
+    client = QdrantClient(**qdrant_kwargs)
 
     if not client.collection_exists(settings.qdrant_collection_name):
         client.create_collection(
